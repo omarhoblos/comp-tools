@@ -7,86 +7,138 @@ LIGHTBLUEB="\033[1;36m"
 YELLOWB="\033[1;33m"
 NC='\033[0m' # No Color
 
-DIR="${HOME}/mongo-data"
+PASSWORD=""
+VOLUMEPATH=""
+DIRECTORY=""
 
-echo "What do you want to do?"
-echo "install | i) Install mongodb"
-echo "cleanup | c) Cleanup mongo image, container & folders generated from this script"
-echo "Enter any other key to escape"
-echo ""
-read choice
+usage() { 
+    printf "MongoDB Docker Deployment\n\n"
+    printf "The script will create a docker container of MongoDB. The path that you pass should be an absolute path."
+    printf "Options:\n\n"
+    echo "-o [ i | install ] - Create a docker container & volume to attach to"
+    echo "-o [ c | cleanup ] - Clean up installation, including docker image"
+    printf "\nArguments (install):\n\n"
+    echo "-p - Add a user assigned password for your DB"
+    echo "-d - Add a directory that you want to create the mongo-data folder in"
+    printf "\nArguments (cleanup):\n\n"
+    echo "-d - Add the path of your mongo-data directory that you want the script to delete"
 
-case "$choice" in
-    c | cleanup)
-        echo "Running cleanup"
-        echo ""
+    exit 1; 
+}
 
-        docker stop mongo
-        echo ""
-
-        docker rm mongo
-        echo ""
-
-        docker rmi mongo
-        # echo ""
-
-        if [ -d "$DIR" ] 
+function folderCheck() {
+    if [ -d "${VOLUMEPATH}/mongo-data" ];
         then
-            echo "Directory mongo-data exists. Removing."
-            rm -rf ${HOME}/mongo-data
+            printf "Directory mongo-data exists. Assigning as volume to docker image.\n"
         else
-            echo "Directory mongo-data was not found. No further action required."
-        fi
+            echo "Error: Directory mongo-data was not found. Creating directory now. ${NC}"
+            mkdir ${VOLUMEPATH}/mongo-data
+    fi
+}
 
-        echo "done."
-        ;;
-    i | install)
-        if [ -d "${HOME}/mongo-data" ] 
-        then
-            echo "Directory mongo-data exists. Assigning as volume to docker image."
-            echo ""
-        else
-            echo "Error: Directory mongo-data was not found. Creating directory now.${NC}\n"
-            mkdir ${HOME}/mongo-data
-        fi
+function dockerContainerSetup() {
+    echo -e "${GREEN}########################################################${NC}"
+    echo -e "${GREEN}############# PULLING MONGODB DOCKER IMAGE #############${NC}"
+    echo -e "${GREEN}########################################################${NC}\n"
 
-        echo -e "${GREEN}########################################################${NC}"
-        echo -e "${GREEN}############# PULLING MONGODB DOCKER IMAGE #############${NC}"
-        echo -e "${GREEN}########################################################${NC}\n"
+    docker pull mongo
 
-        docker pull mongo
+    echo -e "${GREEN}############################################################${NC}"
+    echo -e "${GREEN}############# STARTING MONGODB DOCKER CONTAINER ############${NC}"
+    echo -e "${GREEN}############################################################${NC}\n"
 
-        echo
-        echo -e "${GREEN}############################################################${NC}"
-        echo -e "${GREEN}############# STARTING MONGODB DOCKER CONTAINER ############${NC}"
-        echo -e "${GREEN}############################################################${NC}\n"
+    docker run -it -v ${VOLUMEPATH}/mongo-data:/data/db --name mongo -d -p 27017:27017 mongo mongod --replSet my-mongo-set
 
-        docker run -it -v ${HOME}/mongo-data:/data/db --name mongo -d -p 27017:27017 mongo mongod --replSet my-mongo-set
+}
 
-        echo ""
+function dockerExecCommands() {
+    
+    isDockerRunning=$(docker inspect -f {{.State.Running}} mongo) 
 
+    sleep 1
 
-        isDockerRunning=$(docker inspect -f {{.State.Running}} mongo) 
+    if [ "$isDockerRunning" = true ];
+    then
+
+        docker exec -it mongo mongo --eval "rs.initiate()"
 
         sleep 1
 
-        if [ "$isDockerRunning" = true ];
-        then
+        docker exec -it mongo mongo --eval "cdr = db.getSiblingDB('cdr');cdr.createUser({ user: 'mongo', pwd: '$PASSWORD', roles: [ { role: 'readWrite', db: 'cdr' } ]})"
+        
+        echo -e "${LIGHTBLUEB}Your connection url is${YELLOWB} mongodb://localhost:27017/cdr${NC}. Your username is${LIGHTBLUEB} mongo${NC} & your password is ${LIGHTBLUEB}$PASSWORD${NC} "
+    else
+        echo "There was an error starting mongo. Check the logs or error output from Docker."
+    fi
+}
 
-            docker exec -it mongo mongo --eval "rs.initiate()"
-
-            sleep 1
-
-            docker exec -it mongo mongo --eval "cdr = db.getSiblingDB('cdr');cdr.createUser({ user: 'mongo', pwd: <PASSWORD>, roles: [ { role: 'readWrite', db: 'cdr' } ]})"
-            
-            echo -e "${LIGHTBLUEB}Your connection url is${YELLOWB} mongodb://localhost:27017/cdr${NC}"
-        else
-            echo "There was an error starting mongo. Check the logs or error output from Docker."
+function checkLastCharacterOfVolumePath() {
+    if [[ -n "$VOLUMEPATH" ]]; then 
+        lastCharacter=${VOLUMEPATH: -1}
+        if [[ $lastCharacter == "/" ]]; then
+         echo $lastCharacter $VOLUMEPATH
+            cleanedText=${VOLUMEPATH:0:-1}
+            $VOLUMEPATH=cleanedText
         fi
-        ;;
+    fi
+}
 
-    *)
-        echo "Exiting."
-        ;;
-esac
+function cleanup() {
+    printf "Running cleanup\n"
+    echo ""
 
+    docker stop mongo
+    echo ""
+
+    docker rm mongo
+    echo ""
+
+    docker rmi mongo
+    # echo ""
+
+    if [ -d "${VOLUMEPATH}/mongo-data" ];
+    then
+        echo "Directory mongo-data exists. Removing."
+        rm -rf "${VOLUMEPATH}/mongo-data"
+    else
+        echo "Directory mongo-data was not found. No further action required."
+    fi
+
+    echo "done."
+}
+
+while getopts o:p:d: flag
+do
+    case "${flag}" in
+        o) OPTION=${OPTARG};;
+        p) ARGUMENT=${OPTARG};;
+        d) DIRECTORY=${OPTARG};;
+        *) usage;;
+    esac
+done
+
+if [[ -z "$OPTION" && -z "$DIRECTORY" ]]; then
+    usage
+fi
+
+if [[ -n "$OPTION" ]]; then 
+
+    VOLUMEPATH=$DIRECTORY
+
+    checkLastCharacterOfVolumePath
+
+    if [[ $OPTION =~ ^i(nstall)?$ ]] && [[ -n "$ARGUMENT" ]]; then
+        folderCheck
+    
+        dockerContainerSetup
+
+        PASSWORD=$ARGUMENT
+
+        dockerExecCommands
+    elif [[ $OPTION =~ ^c(leanup)?$ ]] && [[ -n "$DIRECTORY" ]]; then
+        cleanup
+    else 
+        usage
+    fi
+
+fi

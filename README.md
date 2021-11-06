@@ -1,5 +1,5 @@
-# comp-tools
+# Comp Tools
+
 A set of tools I use for getting setup on any dev machine
 
-
-NOTE - for all scripts, remember to modify any field with <PASSWORD> to your desired credentials
+NOTE - these scripts are intended for testing & development use only. They are not intended for production.
