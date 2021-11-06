@@ -12,14 +12,15 @@ VOLUMEPATH=""
 DIRECTORY=""
 
 usage() { 
-    printf "MongoDB Docker Deployment\n\n"
-    printf "The script will create a docker container of MongoDB. The path that you pass should be an absolute path."
+    printf "${PURPLE}MongoDB Docker Deployment${NC}\n\n"
+    printf "The script will create a docker container of MongoDB.\n\nThe path that you pass should be an absolute path.\n\n"
+    printf "${YELLOWB}NOTE - Docker changes ownership of your data folder to root. \nIf you need to run the cleanup script, run this script with${NC} ${LIGHTBLUEB}sudo${NC}\n\n"
     printf "Options:\n\n"
     echo "-o [ i | install ] - Create a docker container & volume to attach to"
     echo "-o [ c | cleanup ] - Clean up installation, including docker image"
     printf "\nArguments (install):\n\n"
     echo "-p - Add a user assigned password for your DB"
-    echo "-d - Add a directory that you want to create the mongo-data folder in"
+    echo "-d - Add a path to the directory that you want to create the mongo-data folder in"
     printf "\nArguments (cleanup):\n\n"
     echo "-d - Add the path of your mongo-data directory that you want the script to delete"
 
@@ -107,13 +108,15 @@ function cleanup() {
     echo "done."
 }
 
-while getopts o:p:d: flag
+usage
+
+while getopts o:p:d:info: flag
 do
     case "${flag}" in
         o) OPTION=${OPTARG};;
         p) ARGUMENT=${OPTARG};;
         d) DIRECTORY=${OPTARG};;
-        *) usage;;
+        info) usage;;
     esac
 done
 
