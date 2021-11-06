@@ -78,7 +78,7 @@ function checkLastCharacterOfVolumePath() {
         lastCharacter=${VOLUMEPATH: -1}
         if [[ $lastCharacter = "/" ]]; then
             echo "$lastCharacter" "$VOLUMEPATH"
-            cleanedText=${VOLUMEPATH%/}
+            cleanedText=${VOLUMEPATH%/*}
             echo $cleanedText
             VOLUMEPATH=$cleanedText
         fi
@@ -96,7 +96,7 @@ function cleanup() {
     echo ""
 
     docker rmi mongo
-    # echo ""
+    echo ""
 
     if [ -d "${VOLUMEPATH}/mongo-data" ];
     then
