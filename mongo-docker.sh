@@ -33,7 +33,7 @@ function folderCheck() {
             printf "Directory mongo-data exists. Assigning as volume to docker image.\n"
         else
             echo "Error: Directory mongo-data was not found. Creating directory now. ${NC}"
-            mkdir ${VOLUMEPATH}/mongo-data
+            mkdir "${VOLUMEPATH}"/mongo-data
     fi
 }
 
@@ -48,13 +48,13 @@ function dockerContainerSetup() {
     echo -e "${GREEN}############# STARTING MONGODB DOCKER CONTAINER ############${NC}"
     echo -e "${GREEN}############################################################${NC}\n"
 
-    docker run -it -v ${VOLUMEPATH}/mongo-data:/data/db --name mongo -d -p 27017:27017 mongo mongod --replSet my-mongo-set
+    docker run -it -v "${VOLUMEPATH}"/mongo-data:/data/db --name mongo -d -p 27017:27017 mongo mongod --replSet my-mongo-set
 
 }
 
 function dockerExecCommands() {
     
-    isDockerRunning=$(docker inspect -f {{.State.Running}} mongo) 
+    isDockerRunning=$(docker inspect -f "{{.State.Running}}" mongo) 
 
     sleep 1
 
@@ -69,17 +69,18 @@ function dockerExecCommands() {
         
         echo -e "${LIGHTBLUEB}Your connection url is${YELLOWB} mongodb://localhost:27017/cdr${NC}. Your username is${LIGHTBLUEB} mongo${NC} & your password is ${LIGHTBLUEB}$PASSWORD${NC} "
     else
-        echo "There was an error starting mongo. Check the logs or error output from Docker."
+        printf "${RED}There was an error starting mongo. Check the logs or error output from Docker."
     fi
 }
 
 function checkLastCharacterOfVolumePath() {
     if [[ -n "$VOLUMEPATH" ]]; then 
         lastCharacter=${VOLUMEPATH: -1}
-        if [[ $lastCharacter == "/" ]]; then
-         echo $lastCharacter $VOLUMEPATH
-            cleanedText=${VOLUMEPATH:0:-1}
-            $VOLUMEPATH=cleanedText
+        if [[ $lastCharacter = "/" ]]; then
+            echo "$lastCharacter" "$VOLUMEPATH"
+            cleanedText=${VOLUMEPATH%/}
+            echo $cleanedText
+            VOLUMEPATH=$cleanedText
         fi
     fi
 }
@@ -108,19 +109,18 @@ function cleanup() {
     echo "done."
 }
 
-usage
-
-while getopts o:p:d:info: flag
+while getopts o:p:d: flag
 do
     case "${flag}" in
         o) OPTION=${OPTARG};;
         p) ARGUMENT=${OPTARG};;
         d) DIRECTORY=${OPTARG};;
-        info) usage;;
+        *) usage;;
     esac
 done
 
 if [[ -z "$OPTION" && -z "$DIRECTORY" ]]; then
+    echo "$OPTION" "$DIRECTORY"
     usage
 fi
 
@@ -140,8 +140,6 @@ if [[ -n "$OPTION" ]]; then
         dockerExecCommands
     elif [[ $OPTION =~ ^c(leanup)?$ ]] && [[ -n "$DIRECTORY" ]]; then
         cleanup
-    else 
-        usage
     fi
 
 fi
