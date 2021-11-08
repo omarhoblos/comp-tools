@@ -37,7 +37,7 @@ function folderCheck() {
     fi
 }
 
-function dockerContainerSetup() {
+function dockerMongoContainerSetup() {
     echo -e "${GREEN}########################################################${NC}"
     echo -e "${GREEN}############# PULLING MONGODB DOCKER IMAGE #############${NC}"
     echo -e "${GREEN}########################################################${NC}\n"
@@ -52,7 +52,7 @@ function dockerContainerSetup() {
 
 }
 
-function dockerExecCommands() {
+function dockerMongoExecCommands() {
     
     isDockerRunning=$(docker inspect -f "{{.State.Running}}" mongo) 
 
@@ -109,12 +109,13 @@ function cleanup() {
     echo "done."
 }
 
-while getopts o:p:d: flag
+while getopts o:p:d:db: flag
 do
     case "${flag}" in
         o) OPTION=${OPTARG};;
         p) ARGUMENT=${OPTARG};;
         d) DIRECTORY=${OPTARG};;
+        db) DATABASETYPE=${OPTARG};;
         *) usage;;
     esac
 done
@@ -133,11 +134,11 @@ if [[ -n "$OPTION" ]]; then
     if [[ $OPTION =~ ^i(nstall)?$ ]] && [[ -n "$ARGUMENT" ]]; then
         folderCheck
     
-        dockerContainerSetup
+        dockerMongoContainerSetup
 
         PASSWORD=$ARGUMENT
 
-        dockerExecCommands
+        dockerMongoExecCommands
     elif [[ $OPTION =~ ^c(leanup)?$ ]] && [[ -n "$DIRECTORY" ]]; then
         cleanup
     fi
