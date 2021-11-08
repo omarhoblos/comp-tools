@@ -7,10 +7,6 @@ LIGHTBLUEB="\033[1;36m"
 YELLOWB="\033[1;33m"
 NC='\033[0m' # No Color
 
-PASSWORD=""
-VOLUMEPATH=""
-DIRECTORY=""
-
 usage() { 
     printf "${PURPLE}MongoDB Docker Deployment${NC}\n\n"
     printf "The script will create a docker container of MongoDB.\n\nThe path that you pass should be an absolute path.\n\n"
@@ -28,12 +24,16 @@ usage() {
 }
 
 function folderCheck() {
-    if [ -d "${VOLUMEPATH}/mongo-data" ];
-        then
+    if [ -d "$1" ]; then
+        if [ -d "$1/mongo-data" ]; then
             printf "Directory mongo-data exists. Assigning as volume to docker image.\n"
         else
-            echo "Error: Directory mongo-data was not found. Creating directory now. ${NC}"
-            mkdir "${VOLUMEPATH}"/mongo-data
+            printf "${RED}Error: Directory mongo-data was not found. Creating directory now.${NC}\n"
+            mkdir "$1"/mongo-data
+        fi
+    else 
+        printf "${RED}Error: Directory could not be resolved. Exiting${NC}\n"
+        exit 1;
     fi
 }
 
@@ -48,8 +48,7 @@ function dockerMongoContainerSetup() {
     echo -e "${GREEN}############# STARTING MONGODB DOCKER CONTAINER ############${NC}"
     echo -e "${GREEN}############################################################${NC}\n"
 
-    docker run -it -v "${VOLUMEPATH}"/mongo-data:/data/db --name mongo -d -p 27017:27017 mongo mongod --replSet my-mongo-set
-
+    docker run -it -v "$1"/mongo-data:/data/db --name mongo -d -p 27017:27017 mongo mongod --replSet my-mongo-set
 }
 
 function dockerMongoExecCommands() {
@@ -58,30 +57,16 @@ function dockerMongoExecCommands() {
 
     sleep 1
 
-    if [ "$isDockerRunning" = true ];
-    then
-
+    if [ "$isDockerRunning" = true ]; then
         docker exec -it mongo mongo --eval "rs.initiate()"
 
         sleep 1
 
-        docker exec -it mongo mongo --eval "cdr = db.getSiblingDB('cdr');cdr.createUser({ user: 'mongo', pwd: '$PASSWORD', roles: [ { role: 'readWrite', db: 'cdr' } ]})"
+        docker exec -it mongo mongo --eval "cdr = db.getSiblingDB('cdr');cdr.createUser({ user: 'mongo', pwd: '$1', roles: [ { role: 'readWrite', db: 'cdr' } ]})"
         
-        echo -e "${LIGHTBLUEB}Your connection url is${YELLOWB} mongodb://localhost:27017/cdr${NC}. Your username is${LIGHTBLUEB} mongo${NC} & your password is ${LIGHTBLUEB}$PASSWORD${NC} "
+        echo -e "${LIGHTBLUEB}Your connection url is${YELLOWB} mongodb://localhost:27017/cdr${NC}. Your username is${LIGHTBLUEB} mongo${NC} & your password is ${LIGHTBLUEB}$1${NC}"
     else
-        printf "${RED}There was an error starting mongo. Check the logs or error output from Docker."
-    fi
-}
-
-function checkLastCharacterOfVolumePath() {
-    if [[ -n "$VOLUMEPATH" ]]; then 
-        lastCharacter=${VOLUMEPATH: -1}
-        if [[ $lastCharacter = "/" ]]; then
-            echo "$lastCharacter" "$VOLUMEPATH"
-            cleanedText=${VOLUMEPATH%/*}
-            echo $cleanedText
-            VOLUMEPATH=$cleanedText
-        fi
+        printf "${RED}There was an error starting mongo. Check the logs or error output from Docker.${NC}\n"
     fi
 }
 
@@ -98,10 +83,10 @@ function cleanup() {
     docker rmi mongo
     echo ""
 
-    if [ -d "${VOLUMEPATH}/mongo-data" ];
+    if [ -d "$1/mongo-data" ];
     then
         echo "Directory mongo-data exists. Removing."
-        rm -rf "${VOLUMEPATH}/mongo-data"
+        rm -rf "$1/mongo-data"
     else
         echo "Directory mongo-data was not found. No further action required."
     fi
@@ -127,18 +112,12 @@ fi
 
 if [[ -n "$OPTION" ]]; then 
 
-    VOLUMEPATH=$DIRECTORY
-
-    checkLastCharacterOfVolumePath
-
     if [[ $OPTION =~ ^i(nstall)?$ ]] && [[ -n "$ARGUMENT" ]]; then
-        folderCheck
+        folderCheck $DIRECTORY
     
-        dockerMongoContainerSetup
+        dockerMongoContainerSetup $DIRECTORY
 
-        PASSWORD=$ARGUMENT
-
-        dockerMongoExecCommands
+        dockerMongoExecCommands $ARGUMENT
     elif [[ $OPTION =~ ^c(leanup)?$ ]] && [[ -n "$DIRECTORY" ]]; then
         cleanup
     fi
