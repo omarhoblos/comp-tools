@@ -59,11 +59,11 @@ case "$choice" in
         echo -e "${GREEN}##########################################################${NC}"
         echo
 
-        docker run --name postgres -e POSTGRES_PASSWORD=<PASSWORD> -v ${HOME}/postgres-data/:/var/lib/postgresql/data -d -p 5432:5432 postgres
+        docker run --name postgres -e POSTGRES_PASSWORD=password -v ${HOME}/postgres-data/:/var/lib/postgresql/data -d -p 5432:5432 postgres
 
         echo
         echo -e "${GREEN}Postgres should now run on localhost:5432${NC}"
-        echo -e "${GREEN}Username is ${NC}" postgres "${GREEN}, Password is${NC}"  <PASSWORD>
+        echo -e "${GREEN}Username is ${NC}" postgres "${GREEN}, Password is${NC}" password
         echo
         ;;
     *)
