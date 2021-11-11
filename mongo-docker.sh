@@ -16,8 +16,8 @@ usage() {
     printf "The script will create a docker container of MongoDB.\n\nThe path that you pass should be an absolute path.\n\n"
     printf "${YELLOWB}NOTE - Docker changes ownership of your data folder to root. \nIf you need to run the cleanup script, run this script with${NC} ${LIGHTBLUEB}sudo${NC}\n\n"
     printf "Options:\n\n"
-    echo "-o [ i | install ] - Create a docker container & volume to attach to"
-    echo "-o [ c | cleanup ] - Clean up installation, including docker image"
+    echo "-o i | -o install ] - Create a docker container & volume to attach to"
+    echo "-o c | -o cleanup ] - Clean up installation, including docker image"
     printf "\nArguments (install):\n\n"
     echo "-p - Add a user assigned password for your DB"
     echo "-d - Add a path to the directory that you want to create the mongo-data folder in"
@@ -26,6 +26,8 @@ usage() {
 
     exit 1; 
 }
+
+# Done
 
 function folderCheck() {
     if [ -d "${VOLUMEPATH}/mongo-data" ];
@@ -77,9 +79,7 @@ function checkLastCharacterOfVolumePath() {
     if [[ -n "$VOLUMEPATH" ]]; then 
         lastCharacter=${VOLUMEPATH: -1}
         if [[ $lastCharacter = "/" ]]; then
-            echo "$lastCharacter" "$VOLUMEPATH"
             cleanedText=${VOLUMEPATH%/*}
-            echo $cleanedText
             VOLUMEPATH=$cleanedText
         fi
     fi
@@ -115,13 +115,29 @@ do
         o) OPTION=${OPTARG};;
         p) ARGUMENT=${OPTARG};;
         d) DIRECTORY=${OPTARG};;
-        *) usage;;
+        # *) usage;;
     esac
 done
 
 if [[ -z "$OPTION" && -z "$DIRECTORY" ]]; then
-    echo "$OPTION" "$DIRECTORY"
-    usage
+    echo "No directory or option was given"
+    exit 1;
+fi
+
+
+if [[ $OPTION =~ ^i(nstall)?$ ]];then  
+    if [[ -z $ARGUMENT ]]; then
+        printf "${RED}No password was given. The format should resemble the following: ./mongo-docker.sh -o install -p mypassword -d /home/user \nExiting.\n"
+        exit 1;
+    elif [[ -z $DIRECTORY ]]; then
+        printf "${RED}No directory was given. The format should resemble the following: ./mongo-docker.sh -o install -p mypassword -d /home/user \nExiting.\n"
+        exit 1;
+    fi
+fi
+
+if [[ $OPTION =~ ^i(nstall)?$ ]] && [[ -z "$ARGUMENT" ]]; then
+    echo "${RED}Missing arguments. Exiting."
+    exit 1;
 fi
 
 if [[ -n "$OPTION" ]]; then 
@@ -131,15 +147,19 @@ if [[ -n "$OPTION" ]]; then
     checkLastCharacterOfVolumePath
 
     if [[ $OPTION =~ ^i(nstall)?$ ]] && [[ -n "$ARGUMENT" ]]; then
-        folderCheck
+        # folderCheck
     
-        dockerContainerSetup
+        # dockerContainerSetup
 
-        PASSWORD=$ARGUMENT
+        # PASSWORD=$ARGUMENT
 
-        dockerExecCommands
+        # dockerExecCommands
+
+        echo "starting mongo install"
     elif [[ $OPTION =~ ^c(leanup)?$ ]] && [[ -n "$DIRECTORY" ]]; then
-        cleanup
+        # cleanup
+        echo "starting cleanup"
+
     fi
 
 fi
