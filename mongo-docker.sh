@@ -147,18 +147,16 @@ if [[ -n "$OPTION" ]]; then
     checkLastCharacterOfVolumePath
 
     if [[ $OPTION =~ ^i(nstall)?$ ]] && [[ -n "$ARGUMENT" ]]; then
-        # folderCheck
+        folderCheck
     
-        # dockerContainerSetup
+        dockerContainerSetup
 
-        # PASSWORD=$ARGUMENT
+        PASSWORD=$ARGUMENT
 
-        # dockerExecCommands
+        dockerExecCommands
 
-        echo "starting mongo install"
     elif [[ $OPTION =~ ^c(leanup)?$ ]] && [[ -n "$DIRECTORY" ]]; then
-        # cleanup
-        echo "starting cleanup"
+        cleanup
 
     fi
 
