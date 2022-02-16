@@ -18,4 +18,4 @@ NOTE - to delete the `mongo-data` volume, the script needs to be run with `sudo`
 
 ### PostgresSQL
 
-Run the `psql-docker.sh` script to create a default db as per the on the [official Docker Hub](https://hub.docker.com/_/postgres) page
+Run the `psql-docker.sh` script to create a default db as per the instructions on the [official Docker Hub](https://hub.docker.com/_/postgres) page
