@@ -1,0 +1,16 @@
+# Use root/example as user/password credentials
+services:
+
+  mongo:
+    image: ${IMAGE}
+    container_name: ${CONTAINER_NAME}
+    ports:
+    - 27017:27017
+    volumes:
+    - ${VOLUME_PATH}:/data/db
+    - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    healthcheck:
+      test: test $$(echo "rs.initiate().ok || rs.status().ok" | mongo --quiet) -eq 1
+      interval: 10s
+    restart: always
+    command: --replSet my-mongo-set
