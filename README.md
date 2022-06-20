@@ -6,6 +6,7 @@ NOTE - these scripts are intended for testing & development use only. They are n
 
 ## Usage
 
+
 ### Mongo deployed in Docker
 
 For `mongo-docker.sh`, pass the operation type (`install` or `cleanup`), the directory that your `mongo-data` sits in (or should be created), and a password (if installing):
@@ -25,3 +26,16 @@ You'll be presented with two options:
 i (or install) - downloads postgres & creates a volume in the `$HOME` directory where the data is store
 
 c (or cleanup) - deletes the container & volume created. Useful if you want to start from scratch
+
+
+### Mongo deployed with Docker Compose
+
+1. cd into mongo folder
+
+2. Modify the env file or create your own
+
+3. To start container `docker-compose --env-file env.dev up -d` , make sure to specify correct env file
+
+4. To stop container `docker-compose up -d`  (database data will not be deleted)
+
+5. To stop and remove all data volumes and images on machine `docker-compose down --rmi -v`  (database data folder will not be deleted - this needs to be done manually)
