@@ -38,6 +38,22 @@ i (or install) - downloads postgres & creates a volume in the `$HOME` directory 
 
 c (or cleanup) - deletes the container & volume created. Useful if you want to start from scratch
 
+### Making backups using Postgres & Docker
+
+Often you'll run into a case where you want to backup your DB, just to check a change or undo a write. Because this script mounts a volume on your computer, this means creating a new container is not an option, since the new container (assuming you mount the same volume) will still have all the data previously written to it. To manage that, you can run `pg_dump` using `docker exec`.
+
+_Backing up_
+
+```console
+docker exec -t postgres pg_dumpall -c -U postgres > dump_`date +%d-%m-%Y"_"%H_%M_%S`.sql
+```
+
+_Restoring_
+
+```console
+cat your_dump.sql | docker exec -i your-db-container psql -U your-db-user -d your-db-name
+```
+
 ### Credits
 
 Thank you to the following for their contributions:
